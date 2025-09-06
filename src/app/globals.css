@@ -24,3 +24,38 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom marker styles for Leaflet */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Vehicle name labels above markers */
+.custom-marker .vehicle-label {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Fullscreen styles for Leaflet map */
+.leaflet-fullscreen {
+  background: white !important;
+}
+
+.leaflet-control-fullscreen {
+  margin: 0 !important;
+}
+
+.leaflet-control-fullscreen-button {
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 18px !important;
+}
+
+.leaflet-control-fullscreen-button:hover {
+  background-color: #f0f0f0 !important;
+  transform: scale(1.05);
+}

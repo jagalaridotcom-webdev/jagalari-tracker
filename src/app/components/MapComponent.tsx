@@ -711,22 +711,119 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   return (
     <div ref={mapRef} className="h-full w-full relative">
       {/* Statistics Cards - Floating over map */}
-      <div className="absolute top-4 right-4 z-[1000] space-y-3 max-h-[calc(100vh-2rem)] overflow-y-auto lg:max-h-none lg:overflow-visible">
-        {/* Mobile: Show only essential cards, hide others */}
+      <div className="absolute top-4 right-4 z-[1000] space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto lg:max-h-none lg:overflow-visible lg:space-y-3">
+        {/* Mobile: Show compact version of all cards */}
         <div className="lg:hidden space-y-2">
-          {/* Collapsed mobile view - show only key stats */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border p-3">
-            <div className="grid grid-cols-2 gap-2 text-center">
-              <div>
-                <div className="text-lg font-bold text-blue-600">{totalCount}</div>
-                <div className="text-xs text-gray-600">Total</div>
-              </div>
-              <div>
-                <div className="text-lg font-bold text-green-600">{onlineCount}</div>
-                <div className="text-xs text-gray-600">Online</div>
-              </div>
+          {/* Live Update Indicator - Mobile */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 backdrop-blur-md rounded-lg shadow-lg border border-green-200/50 p-2 flex items-center space-x-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="text-xs font-semibold text-green-800">Live Tracking</div>
+          </div>
+
+          {/* Total Vehicles - Mobile */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 backdrop-blur-md rounded-lg shadow-lg border border-blue-200/50 p-2 flex items-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">🚐</span>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-blue-800">Total Fleet</div>
+              <div className="text-lg font-bold text-blue-900">{totalCount}</div>
             </div>
           </div>
+
+          {/* Ambulances - Mobile */}
+          <div className="bg-gradient-to-br from-red-50 to-rose-50 backdrop-blur-md rounded-lg shadow-lg border border-red-200/50 p-2 flex items-center space-x-2">
+            <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">🚑</span>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-red-800">Ambulances</div>
+              <div className="text-lg font-bold text-red-900">{ambulanceCount}</div>
+            </div>
+          </div>
+
+          {/* Motor Mobiles - Mobile */}
+          <div className="bg-gradient-to-br from-orange-50 to-amber-50 backdrop-blur-md rounded-lg shadow-lg border border-orange-200/50 p-2 flex items-center space-x-2">
+            <div className="w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">🏍️</span>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-orange-800">Motor Mobile</div>
+              <div className="text-lg font-bold text-orange-900">{motorMobileCount}</div>
+            </div>
+          </div>
+
+          {/* Online Status - Mobile */}
+          <div className="bg-gradient-to-br from-emerald-50 to-green-50 backdrop-blur-md rounded-lg shadow-lg border border-emerald-200/50 p-2 flex items-center space-x-2">
+            <div className="w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">●</span>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-emerald-800">Online</div>
+              <div className="text-lg font-bold text-emerald-900">{onlineCount}</div>
+            </div>
+          </div>
+
+          {/* Offline Status - Mobile */}
+          <div className="bg-gradient-to-br from-gray-50 to-slate-50 backdrop-blur-md rounded-lg shadow-lg border border-gray-200/50 p-2 flex items-center space-x-2">
+            <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">●</span>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-gray-800">Offline</div>
+              <div className="text-lg font-bold text-gray-900">{offlineCount}</div>
+            </div>
+          </div>
+
+          {/* Path Toggle - Mobile */}
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 backdrop-blur-md rounded-lg shadow-lg border border-purple-200/50 p-2 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full flex items-center justify-center ${showPaths ? 'bg-purple-500' : 'bg-gray-400'}`}>
+                <span className="text-white text-xs">📍</span>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-purple-800">Show Paths</div>
+                <div className="text-xs text-purple-600">{showPaths ? 'On' : 'Off'}</div>
+              </div>
+            </div>
+            <button
+              onClick={togglePaths}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                showPaths
+                  ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                  : 'bg-gray-300 hover:bg-gray-400 text-gray-700'
+              }`}
+            >
+              {showPaths ? 'Hide' : 'Show'}
+            </button>
+          </div>
+
+          {/* Current Location - Mobile */}
+          <div className="bg-gradient-to-br from-cyan-50 to-blue-50 backdrop-blur-md rounded-lg shadow-lg border border-cyan-200/50 p-2 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-cyan-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">📍</span>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-cyan-800">My Location</div>
+                <div className="text-xs text-cyan-600">
+                  {locationError ? 'Error' : currentLocation ? 'Located' : 'Find me'}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={snapToCurrentLocation}
+              className="px-2 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-medium rounded transition-colors"
+              title="Center map on your current location"
+            >
+              📍
+            </button>
+          </div>
+          {locationError && (
+            <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+              {locationError}
+            </div>
+          )}
         </div>
 
         {/* Desktop: Show all cards */}

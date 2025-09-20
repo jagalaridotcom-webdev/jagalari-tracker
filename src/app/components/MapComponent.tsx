@@ -304,29 +304,12 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const [showPaths, setShowPaths] = useState(false)
   const [currentLocation, setCurrentLocation] = useState<L.LatLng | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
-  const [isLocating, setIsLocating] = useState(false)
 
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
       try {
-        // Check for saved location
-        const savedLocation = localStorage.getItem('jagalari-current-location')
-        let initialView: [number, number] = [-6.2088, 106.8456] // Default Jakarta coordinates
-        let initialZoom = 13
-
-        if (savedLocation) {
-          try {
-            const locationData = JSON.parse(savedLocation)
-            initialView = [locationData.lat, locationData.lng]
-            initialZoom = locationData.zoom || 16
-            console.log('Restoring saved location:', initialView)
-          } catch (error) {
-            console.error('Error parsing saved location:', error)
-          }
-        }
-
         // Initialize map
-        const map = L.map(mapRef.current).setView(initialView, initialZoom)
+        const map = L.map(mapRef.current).setView([-6.2088, 106.8456], 13) // Jakarta coordinates
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -342,48 +325,6 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
         // Add fullscreen control
         addFullscreenControl(map)
-
-        // Restore current location marker if it exists
-        if (savedLocation) {
-          try {
-            const locationData = JSON.parse(savedLocation)
-            const currentLocationIcon = L.divIcon({
-              html: `
-                <div style="
-                  background-color: #3b82f6;
-                  border: 3px solid white;
-                  border-radius: 50%;
-                  width: 20px;
-                  height: 20px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                ">
-                  <div style="
-                    background-color: white;
-                    border-radius: 50%;
-                    width: 8px;
-                    height: 8px;
-                  "></div>
-                </div>
-              `,
-              className: 'current-location-marker',
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            })
-
-            const currentLocationMarker = L.marker([locationData.lat, locationData.lng], { icon: currentLocationIcon })
-              .addTo(map)
-              .bindPopup('📍 Your Current Location (Restored)')
-
-            markersRef.current.set(-1, currentLocationMarker)
-            setCurrentLocation(L.latLng(locationData.lat, locationData.lng))
-            console.log('Restored current location marker')
-          } catch (error) {
-            console.error('Error restoring current location marker:', error)
-          }
-        }
       } catch (error) {
         console.error('Error initializing map:', error)
       }
@@ -501,43 +442,20 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const snapToCurrentLocation = () => {
     if (!mapInstanceRef.current) return
 
-    // Prevent multiple simultaneous calls
-    if (isLocating) {
-      console.log('Location request already in progress')
-      return
-    }
-
-    setIsLocating(true)
     setLocationError(null)
 
     if (!navigator.geolocation) {
       setLocationError('Geolocation is not supported by this browser')
-      setIsLocating(false)
       return
     }
 
-    console.log('Requesting current location...')
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude, accuracy } = position.coords
+        const { latitude, longitude } = position.coords
         const currentLatLng = L.latLng(latitude, longitude)
-
-        console.log('Location found:', { latitude, longitude, accuracy })
 
         // Update state
         setCurrentLocation(currentLatLng)
-        setIsLocating(false)
-
-        // Save location to localStorage for persistence
-        const locationData = {
-          lat: latitude,
-          lng: longitude,
-          zoom: 16,
-          timestamp: Date.now(),
-          accuracy: accuracy
-        }
-        localStorage.setItem('jagalari-current-location', JSON.stringify(locationData))
 
         // Center map on current location
         mapInstanceRef.current!.setView(currentLatLng, 16)
@@ -572,7 +490,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
           const currentLocationMarker = L.marker(currentLatLng, { icon: currentLocationIcon })
             .addTo(mapInstanceRef.current!)
-            .bindPopup(`📍 Your Current Location<br><small>Accuracy: ±${Math.round(accuracy)}m</small>`)
+            .bindPopup('📍 Your Current Location')
 
           markersRef.current.set(-1, currentLocationMarker)
         } else {
@@ -580,39 +498,32 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
           const existingMarker = markersRef.current.get(-1)
           if (existingMarker) {
             existingMarker.setLatLng(currentLatLng)
-            existingMarker.setPopupContent(`📍 Your Current Location<br><small>Accuracy: ±${Math.round(accuracy)}m</small>`)
           }
         }
 
-        console.log('Successfully snapped to current location:', latitude, longitude)
+        console.log('Snapped to current location:', latitude, longitude)
       },
       (error) => {
-        console.error('Geolocation error:', error)
-        setIsLocating(false)
-
-        let errorMessage = 'Unable to get your location'
-
+        console.error('Error getting current location:', error)
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Location access denied. Please enable location permissions in your browser settings.'
+            setLocationError('Location access denied by user')
             break
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information is unavailable. Please check your GPS/network settings.'
+            setLocationError('Location information unavailable')
             break
           case error.TIMEOUT:
-            errorMessage = 'Location request timed out. Please try again.'
+            setLocationError('Location request timed out')
             break
           default:
-            errorMessage = `Location error: ${error.message || 'Unknown error occurred'}`
+            setLocationError('An unknown error occurred')
             break
         }
-
-        setLocationError(errorMessage)
       },
       {
-        enableHighAccuracy: false, // Changed to false to avoid CoreLocation issues
-        timeout: 15000, // Increased timeout
-        maximumAge: 600000 // 10 minutes cache
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
       }
     )
   }
@@ -647,14 +558,12 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
         const marker = L.marker([position.latitude, position.longitude], { icon: customIcon })
           .addTo(map)
-          .bindPopup(
-            `<div>
-              <strong>${device.name.replace(/</g, '<').replace(/>/g, '>')}</strong><br>
-              Status: <span style="color: ${isOnline ? 'green' : 'red'}">${device.status}</span><br>
-              Speed: ${position.speed} km/h<br>
-              Last Update: ${new Date(position.timestamp).toLocaleString()}
-            </div>`
-          )
+          .bindPopup(`
+            <b>${device.name}</b><br>
+            Status: <span style="color: ${isOnline ? 'green' : 'red'}">${device.status}</span><br>
+            Speed: ${position.speed} km/h<br>
+            Last Update: ${new Date(position.timestamp).toLocaleString()}
+          `)
 
         markersRef.current.set(position.deviceId, marker)
       }
@@ -906,27 +815,22 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
         <div className="bg-gradient-to-br from-cyan-50 to-blue-50 backdrop-blur-md rounded-xl shadow-xl border border-cyan-200/50 p-4 min-w-[180px] hover:shadow-2xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className={`w-4 h-4 rounded-full shadow-lg flex items-center justify-center ${isLocating ? 'bg-orange-500 animate-pulse' : 'bg-cyan-500'}`}>
-                <span className="text-white text-xs">{isLocating ? '⏳' : '📍'}</span>
+              <div className="w-4 h-4 bg-cyan-500 rounded-full shadow-lg flex items-center justify-center">
+                <span className="text-white text-xs">📍</span>
               </div>
               <div>
                 <div className="text-sm font-semibold text-cyan-800">My Location</div>
                 <div className="text-xs text-cyan-600">
-                  {isLocating ? 'Locating...' : locationError ? 'Error' : currentLocation ? 'Located' : 'Find me'}
+                  {locationError ? 'Error' : currentLocation ? 'Located' : 'Find me'}
                 </div>
               </div>
             </div>
             <button
               onClick={snapToCurrentLocation}
-              disabled={isLocating}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 shadow-sm ${
-                isLocating
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                  : 'bg-cyan-500 hover:bg-cyan-600 text-white'
-              }`}
-              title={isLocating ? 'Location request in progress...' : 'Center map on your current location'}
+              className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-medium rounded-md transition-colors duration-200 shadow-sm"
+              title="Center map on your current location"
             >
-              {isLocating ? '⏳' : '📍'}
+              📍
             </button>
           </div>
           {locationError && (

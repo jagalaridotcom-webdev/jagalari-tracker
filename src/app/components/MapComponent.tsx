@@ -711,8 +711,26 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   return (
     <div ref={mapRef} className="h-full w-full relative">
       {/* Statistics Cards - Floating over map */}
-      <div className="absolute top-4 right-4 z-[1000] space-y-3">
-        {/* Live Update Indicator */}
+      <div className="absolute top-4 right-4 z-[1000] space-y-3 max-h-[calc(100vh-2rem)] overflow-y-auto lg:max-h-none lg:overflow-visible">
+        {/* Mobile: Show only essential cards, hide others */}
+        <div className="lg:hidden space-y-2">
+          {/* Collapsed mobile view - show only key stats */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border p-3">
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div>
+                <div className="text-lg font-bold text-blue-600">{totalCount}</div>
+                <div className="text-xs text-gray-600">Total</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-green-600">{onlineCount}</div>
+                <div className="text-xs text-gray-600">Online</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: Show all cards */}
+        <div className="hidden lg:block space-y-3">
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 backdrop-blur-md rounded-xl shadow-xl border border-green-200/50 p-4 flex items-center space-x-3 min-w-[180px] hover:shadow-2xl transition-all duration-300">
           <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
           <div>
@@ -838,6 +856,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
               {locationError}
             </div>
           )}
+        </div>
         </div>
       </div>
 

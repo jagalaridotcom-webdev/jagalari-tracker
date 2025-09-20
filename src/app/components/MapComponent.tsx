@@ -302,6 +302,8 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const gpxBoundsRef = useRef<L.LatLngBounds | null>(null)
   const gpxErrorCountRef = useRef<number>(0)
   const [showPaths, setShowPaths] = useState(false)
+  const [currentLocation, setCurrentLocation] = useState<L.LatLng | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
@@ -434,6 +436,96 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
         pathLinesRef.current.clear()
       }
     }
+  }
+
+  // Snap to current location
+  const snapToCurrentLocation = () => {
+    if (!mapInstanceRef.current) return
+
+    setLocationError(null)
+
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by this browser')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        const currentLatLng = L.latLng(latitude, longitude)
+
+        // Update state
+        setCurrentLocation(currentLatLng)
+
+        // Center map on current location
+        mapInstanceRef.current!.setView(currentLatLng, 16)
+
+        // Add a marker for current location if it doesn't exist
+        if (!markersRef.current.has(-1)) { // Use -1 as ID for current location marker
+          const currentLocationIcon = L.divIcon({
+            html: `
+              <div style="
+                background-color: #3b82f6;
+                border: 3px solid white;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              ">
+                <div style="
+                  background-color: white;
+                  border-radius: 50%;
+                  width: 8px;
+                  height: 8px;
+                "></div>
+              </div>
+            `,
+            className: 'current-location-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          })
+
+          const currentLocationMarker = L.marker(currentLatLng, { icon: currentLocationIcon })
+            .addTo(mapInstanceRef.current!)
+            .bindPopup('📍 Your Current Location')
+
+          markersRef.current.set(-1, currentLocationMarker)
+        } else {
+          // Update existing marker position
+          const existingMarker = markersRef.current.get(-1)
+          if (existingMarker) {
+            existingMarker.setLatLng(currentLatLng)
+          }
+        }
+
+        console.log('Snapped to current location:', latitude, longitude)
+      },
+      (error) => {
+        console.error('Error getting current location:', error)
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError('Location access denied by user')
+            break
+          case error.POSITION_UNAVAILABLE:
+            setLocationError('Location information unavailable')
+            break
+          case error.TIMEOUT:
+            setLocationError('Location request timed out')
+            break
+          default:
+            setLocationError('An unknown error occurred')
+            break
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    )
   }
 
   useEffect(() => {
@@ -717,6 +809,35 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
               {showPaths ? 'Hide' : 'Show'}
             </button>
           </div>
+        </div>
+
+        {/* Current Location */}
+        <div className="bg-gradient-to-br from-cyan-50 to-blue-50 backdrop-blur-md rounded-xl shadow-xl border border-cyan-200/50 p-4 min-w-[180px] hover:shadow-2xl transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-4 h-4 bg-cyan-500 rounded-full shadow-lg flex items-center justify-center">
+                <span className="text-white text-xs">📍</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-cyan-800">My Location</div>
+                <div className="text-xs text-cyan-600">
+                  {locationError ? 'Error' : currentLocation ? 'Located' : 'Find me'}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={snapToCurrentLocation}
+              className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-medium rounded-md transition-colors duration-200 shadow-sm"
+              title="Center map on your current location"
+            >
+              📍
+            </button>
+          </div>
+          {locationError && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+              {locationError}
+            </div>
+          )}
         </div>
       </div>
 

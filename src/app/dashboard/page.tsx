@@ -202,68 +202,166 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="p-4 space-y-4 max-h-full overflow-y-auto">
-                <div>
-                  <h2 className="text-xl font-semibold text-black mb-2">GPX Upload</h2>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".gpx"
-                    onChange={handleFileUpload}
-                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                  {gpxData && (
-                    <div className="mt-2 space-y-2">
-                      <div className="text-base font-medium text-green-700 flex items-center">
-                        <span className="mr-2">📍</span>
-                        GPX file loaded: {localStorage.getItem('jagalari-gpx-filename') || 'GPX Route'}
+                {/* GPX Upload Section */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h2 className="text-lg font-semibold text-black mb-3 flex items-center">
+                    <span className="mr-2">📍</span>
+                    GPX Route Management
+                  </h2>
+
+                  {/* File Upload */}
+                  <div className="mb-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".gpx"
+                      onChange={handleFileUpload}
+                      className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-500 file:text-white hover:file:bg-blue-600 transition-colors"
+                    />
+                  </div>
+
+                  {/* GPX Status and Controls */}
+                  {gpxData ? (
+                    <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-green-800 flex items-center mb-1">
+                            <span className="mr-2">✅</span>
+                            Route Loaded
+                          </div>
+                          <div className="text-xs text-green-600">
+                            {localStorage.getItem('jagalari-gpx-filename') || 'GPX Route'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={clearGpxData}
+                          className="ml-3 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-md hover:bg-red-600 transition-colors shadow-sm"
+                          title="Remove GPX route from map"
+                        >
+                          🗑️ Clear
+                        </button>
                       </div>
-                      <button
-                        onClick={clearGpxData}
-                        className="text-sm px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        Clear GPX
-                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-100 border border-gray-200 rounded-md p-3">
+                      <div className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-2">📁</span>
+                        No GPX route loaded
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Upload a .gpx file to display routes on the map
+                      </div>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <h2 className="text-xl font-semibold text-black mb-2">Active Vehicles</h2>
-                  {authError && (
-                    <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-base text-yellow-800">
-                      ⚠️ Using demo data - Traccar authentication failed. Please check your credentials in .env.local
-                    </div>
-                  )}
-                  {loading ? (
-                    <div className="text-base text-gray-700">Loading devices...</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {devices.map(device => {
-                        const deviceName = device.name.toLowerCase()
-                        let icon = '📍'
-                        if (deviceName.includes('ambulance')) {
-                          icon = '🚑'
-                        } else if (deviceName.includes('motor mobile') || deviceName.includes('motor')) {
-                          icon = '🏍️'
-                        }
+                {/* Fleet Overview Section */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h2 className="text-lg font-semibold text-black mb-3 flex items-center">
+                    <span className="mr-2">🚐</span>
+                    Fleet Overview
+                  </h2>
 
-                        return (
-                          <div key={device.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-base">{icon}</span>
-                              <span className="text-base text-gray-800">{device.name}</span>
-                            </div>
-                            <span className={`text-sm font-medium ${device.status === 'online' ? 'text-green-600' : 'text-red-600'}`}>
-                              {device.status}
-                            </span>
-                          </div>
-                        )
-                      })}
-                      {devices.length === 0 && !authError && (
-                        <div className="text-base text-gray-700">No devices found</div>
-                      )}
+                  {/* Fleet Statistics */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-white rounded-md p-2 text-center">
+                      <div className="text-lg font-bold text-blue-600">{devices.length}</div>
+                      <div className="text-xs text-gray-600">Total</div>
+                    </div>
+                    <div className="bg-white rounded-md p-2 text-center">
+                      <div className="text-lg font-bold text-green-600">
+                        {devices.filter(d => d.status === 'online').length}
+                      </div>
+                      <div className="text-xs text-gray-600">Online</div>
+                    </div>
+                  </div>
+
+                  {/* Auth Error Warning */}
+                  {authError && (
+                    <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <div className="text-sm text-yellow-800 flex items-center">
+                        <span className="mr-2">⚠️</span>
+                        Demo data mode
+                      </div>
+                      <div className="text-xs text-yellow-700 mt-1">
+                        Check .env.local credentials
+                      </div>
                     </div>
                   )}
+
+                  {/* Vehicle List */}
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Active Vehicles</h3>
+                    {loading ? (
+                      <div className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-2">⏳</span>
+                        Loading vehicles...
+                      </div>
+                    ) : devices.length > 0 ? (
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {devices.map(device => {
+                          const deviceName = device.name.toLowerCase()
+                          let icon = '📍'
+                          if (deviceName.includes('ambulance')) {
+                            icon = '🚑'
+                          } else if (deviceName.includes('motor mobile') || deviceName.includes('motor')) {
+                            icon = '🏍️'
+                          }
+
+                          return (
+                            <div key={device.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                <span className="text-sm">{icon}</span>
+                                <span className="text-sm text-gray-800 truncate">{device.name}</span>
+                              </div>
+                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                device.status === 'online'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {device.status}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-2">📭</span>
+                        No vehicles found
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Actions Section */}
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <h2 className="text-lg font-semibold text-black mb-3 flex items-center">
+                    <span className="mr-2">⚡</span>
+                    Quick Actions
+                  </h2>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setShowMobileSidebar(false)
+                        // Could add refresh functionality here
+                      }}
+                      className="w-full text-left px-3 py-2 bg-white rounded-md hover:bg-gray-50 transition-colors flex items-center text-sm"
+                    >
+                      <span className="mr-3">🔄</span>
+                      Refresh Data
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileSidebar(false)
+                        // Could add settings navigation here
+                      }}
+                      className="w-full text-left px-3 py-2 bg-white rounded-md hover:bg-gray-50 transition-colors flex items-center text-sm"
+                    >
+                      <span className="mr-3">⚙️</span>
+                      Settings
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

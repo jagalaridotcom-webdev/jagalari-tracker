@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [devices, setDevices] = useState<Device[]>([])
   const [positions, setPositions] = useState<Position[]>([])
   const [loading, setLoading] = useState(true)
-  const [gpxData, setGpxData] = useState<any>(null)
+  const [gpxData, setGpxData] = useState<string | null>(null)
   const [authError, setAuthError] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [displayTime, setDisplayTime] = useState<string>('Loading...')
@@ -32,9 +32,10 @@ export default function Dashboard() {
         setPositions(positionsData)
         setAuthError(false)
         setLastUpdate(new Date())
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to fetch Traccar data:', error)
-        if (error.response?.status === 401) {
+        const axiosError = error as { response?: { status?: number } }
+        if (axiosError.response?.status === 401) {
           console.error('Traccar authentication failed. Please check your credentials in .env.local')
           setAuthError(true)
         }

@@ -68,9 +68,10 @@ class TraccarService {
         headers: this.getHeaders()
       })
       return response.data
-    } catch (error: any) {
-      console.error('Failed to fetch devices:', error.response?.status, error.response?.data)
-      if (error.response?.status === 401) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number; data?: unknown } }
+      console.error('Failed to fetch devices:', axiosError.response?.status, axiosError.response?.data)
+      if (axiosError.response?.status === 401) {
         console.error('Authentication failed. Switching to mock data mode.')
         this.useMockData = true
         return mockDevices
@@ -94,9 +95,10 @@ class TraccarService {
         headers: this.getHeaders()
       })
       return response.data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch positions:', error)
-      if (error.response?.status === 401) {
+      const axiosError = error as { response?: { status?: number } }
+      if (axiosError.response?.status === 401) {
         this.useMockData = true
         return deviceId ? mockPositions.filter(p => p.deviceId === deviceId) : mockPositions
       }
@@ -115,9 +117,10 @@ class TraccarService {
         headers: this.getHeaders()
       })
       return response.data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch latest positions:', error)
-      if (error.response?.status === 401) {
+      const axiosError = error as { response?: { status?: number } }
+      if (axiosError.response?.status === 401) {
         this.useMockData = true
         return mockPositions
       }

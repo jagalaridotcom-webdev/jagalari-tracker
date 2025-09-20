@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-gpx'
-import { traccarService, Position, Device } from '../../lib/traccar'
+import { Position, Device } from '../../lib/traccar'
 
 // Fix for default markers in Leaflet
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -295,7 +296,8 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
-  const pathLinesRef = useRef<Map<number, L.Polyline>>(new Map())
+  const pathLinesRef = useRef<Map<number, L.Layer>>(new Map())
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gpxLayerRef = useRef<any>(null)
   const gpxBoundsRef = useRef<L.LatLngBounds | null>(null)
   const gpxErrorCountRef = useRef<number>(0)
@@ -313,7 +315,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
         }).addTo(map)
 
         // Add global error handler for map
-        map.on('error', (e: any) => {
+        map.on('error', (e: unknown) => {
           console.error('Map error:', e)
         })
 
@@ -402,7 +404,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
       })
 
       pathCircle.addTo(map)
-      pathLinesRef.current.set(deviceId, pathCircle as any)
+      pathLinesRef.current.set(deviceId, pathCircle as L.Circle)
     }
   }
 
@@ -548,6 +550,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
         return
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const gpx = new (L as any).GPX(gpxData, {
         async: true,
         marker_options: {
@@ -565,10 +568,12 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
       })
 
       // Add error handler to GPX object
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       gpx.on('error', (e: any) => {
         console.error('GPX parsing error:', e)
       })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     gpx.on('loaded', (e: any) => {
       try {
         console.log('GPX loaded successfully')
@@ -584,6 +589,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
       }
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     gpx.on('error', (e: any) => {
       console.error('GPX loading error:', e)
       gpxErrorCountRef.current++

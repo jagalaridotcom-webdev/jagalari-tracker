@@ -304,6 +304,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const [showPaths, setShowPaths] = useState(false)
   const [currentLocation, setCurrentLocation] = useState<L.LatLng | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [isLocating, setIsLocating] = useState(false)
 
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
@@ -500,27 +501,41 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const snapToCurrentLocation = () => {
     if (!mapInstanceRef.current) return
 
+    // Prevent multiple simultaneous calls
+    if (isLocating) {
+      console.log('Location request already in progress')
+      return
+    }
+
+    setIsLocating(true)
     setLocationError(null)
 
     if (!navigator.geolocation) {
       setLocationError('Geolocation is not supported by this browser')
+      setIsLocating(false)
       return
     }
 
+    console.log('Requesting current location...')
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords
+        const { latitude, longitude, accuracy } = position.coords
         const currentLatLng = L.latLng(latitude, longitude)
+
+        console.log('Location found:', { latitude, longitude, accuracy })
 
         // Update state
         setCurrentLocation(currentLatLng)
+        setIsLocating(false)
 
         // Save location to localStorage for persistence
         const locationData = {
           lat: latitude,
           lng: longitude,
           zoom: 16,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          accuracy: accuracy
         }
         localStorage.setItem('jagalari-current-location', JSON.stringify(locationData))
 
@@ -557,7 +572,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
           const currentLocationMarker = L.marker(currentLatLng, { icon: currentLocationIcon })
             .addTo(mapInstanceRef.current!)
-            .bindPopup('📍 Your Current Location')
+            .bindPopup(`📍 Your Current Location<br><small>Accuracy: ±${Math.round(accuracy)}m</small>`)
 
           markersRef.current.set(-1, currentLocationMarker)
         } else {
@@ -565,32 +580,39 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
           const existingMarker = markersRef.current.get(-1)
           if (existingMarker) {
             existingMarker.setLatLng(currentLatLng)
+            existingMarker.setPopupContent(`📍 Your Current Location<br><small>Accuracy: ±${Math.round(accuracy)}m</small>`)
           }
         }
 
-        console.log('Snapped to current location:', latitude, longitude)
+        console.log('Successfully snapped to current location:', latitude, longitude)
       },
       (error) => {
-        console.error('Error getting current location:', error)
+        console.error('Geolocation error:', error)
+        setIsLocating(false)
+
+        let errorMessage = 'Unable to get your location'
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setLocationError('Location access denied by user')
+            errorMessage = 'Location access denied. Please enable location permissions in your browser settings.'
             break
           case error.POSITION_UNAVAILABLE:
-            setLocationError('Location information unavailable')
+            errorMessage = 'Location information is unavailable. Please check your GPS/network settings.'
             break
           case error.TIMEOUT:
-            setLocationError('Location request timed out')
+            errorMessage = 'Location request timed out. Please try again.'
             break
           default:
-            setLocationError('An unknown error occurred')
+            errorMessage = `Location error: ${error.message || 'Unknown error occurred'}`
             break
         }
+
+        setLocationError(errorMessage)
       },
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
+        enableHighAccuracy: false, // Changed to false to avoid CoreLocation issues
+        timeout: 15000, // Increased timeout
+        maximumAge: 600000 // 10 minutes cache
       }
     )
   }
@@ -882,22 +904,27 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
         <div className="bg-gradient-to-br from-cyan-50 to-blue-50 backdrop-blur-md rounded-xl shadow-xl border border-cyan-200/50 p-4 min-w-[180px] hover:shadow-2xl transition-all duration-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-cyan-500 rounded-full shadow-lg flex items-center justify-center">
-                <span className="text-white text-xs">📍</span>
+              <div className={`w-4 h-4 rounded-full shadow-lg flex items-center justify-center ${isLocating ? 'bg-orange-500 animate-pulse' : 'bg-cyan-500'}`}>
+                <span className="text-white text-xs">{isLocating ? '⏳' : '📍'}</span>
               </div>
               <div>
                 <div className="text-sm font-semibold text-cyan-800">My Location</div>
                 <div className="text-xs text-cyan-600">
-                  {locationError ? 'Error' : currentLocation ? 'Located' : 'Find me'}
+                  {isLocating ? 'Locating...' : locationError ? 'Error' : currentLocation ? 'Located' : 'Find me'}
                 </div>
               </div>
             </div>
             <button
               onClick={snapToCurrentLocation}
-              className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-medium rounded-md transition-colors duration-200 shadow-sm"
-              title="Center map on your current location"
+              disabled={isLocating}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 shadow-sm ${
+                isLocating
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  : 'bg-cyan-500 hover:bg-cyan-600 text-white'
+              }`}
+              title={isLocating ? 'Location request in progress...' : 'Center map on your current location'}
             >
-              📍
+              {isLocating ? '⏳' : '📍'}
             </button>
           </div>
           {locationError && (

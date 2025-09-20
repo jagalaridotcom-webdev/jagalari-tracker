@@ -308,8 +308,24 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
       try {
+        // Check for saved location
+        const savedLocation = localStorage.getItem('jagalari-current-location')
+        let initialView: [number, number] = [-6.2088, 106.8456] // Default Jakarta coordinates
+        let initialZoom = 13
+
+        if (savedLocation) {
+          try {
+            const locationData = JSON.parse(savedLocation)
+            initialView = [locationData.lat, locationData.lng]
+            initialZoom = locationData.zoom || 16
+            console.log('Restoring saved location:', initialView)
+          } catch (error) {
+            console.error('Error parsing saved location:', error)
+          }
+        }
+
         // Initialize map
-        const map = L.map(mapRef.current).setView([-6.2088, 106.8456], 13) // Jakarta coordinates
+        const map = L.map(mapRef.current).setView(initialView, initialZoom)
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -325,6 +341,48 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
         // Add fullscreen control
         addFullscreenControl(map)
+
+        // Restore current location marker if it exists
+        if (savedLocation) {
+          try {
+            const locationData = JSON.parse(savedLocation)
+            const currentLocationIcon = L.divIcon({
+              html: `
+                <div style="
+                  background-color: #3b82f6;
+                  border: 3px solid white;
+                  border-radius: 50%;
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                ">
+                  <div style="
+                    background-color: white;
+                    border-radius: 50%;
+                    width: 8px;
+                    height: 8px;
+                  "></div>
+                </div>
+              `,
+              className: 'current-location-marker',
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            })
+
+            const currentLocationMarker = L.marker([locationData.lat, locationData.lng], { icon: currentLocationIcon })
+              .addTo(map)
+              .bindPopup('📍 Your Current Location (Restored)')
+
+            markersRef.current.set(-1, currentLocationMarker)
+            setCurrentLocation(L.latLng(locationData.lat, locationData.lng))
+            console.log('Restored current location marker')
+          } catch (error) {
+            console.error('Error restoring current location marker:', error)
+          }
+        }
       } catch (error) {
         console.error('Error initializing map:', error)
       }
@@ -456,6 +514,15 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
         // Update state
         setCurrentLocation(currentLatLng)
+
+        // Save location to localStorage for persistence
+        const locationData = {
+          lat: latitude,
+          lng: longitude,
+          zoom: 16,
+          timestamp: Date.now()
+        }
+        localStorage.setItem('jagalari-current-location', JSON.stringify(locationData))
 
         // Center map on current location
         mapInstanceRef.current!.setView(currentLatLng, 16)

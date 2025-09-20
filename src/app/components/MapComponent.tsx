@@ -647,12 +647,14 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
 
         const marker = L.marker([position.latitude, position.longitude], { icon: customIcon })
           .addTo(map)
-          .bindPopup(`
-            <b>${device.name}</b><br>
-            Status: <span style="color: ${isOnline ? 'green' : 'red'}">${device.status}</span><br>
-            Speed: ${position.speed} km/h<br>
-            Last Update: ${new Date(position.timestamp).toLocaleString()}
-          `)
+          .bindPopup(
+            `<div>
+              <strong>${device.name.replace(/</g, '<').replace(/>/g, '>')}</strong><br>
+              Status: <span style="color: ${isOnline ? 'green' : 'red'}">${device.status}</span><br>
+              Speed: ${position.speed} km/h<br>
+              Last Update: ${new Date(position.timestamp).toLocaleString()}
+            </div>`
+          )
 
         markersRef.current.set(position.deviceId, marker)
       }

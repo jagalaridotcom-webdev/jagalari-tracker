@@ -10,13 +10,23 @@ export async function GET(request: NextRequest) {
   const path = searchParams.get('path') || ''
 
   try {
-    const credentials = btoa(`${TRACCAR_EMAIL}:${TRACCAR_PASSWORD}`)
-    const headers = {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/json'
-    }
+    // Create axios instance with cookie jar support
+    const axiosInstance = axios.create({
+      baseURL: TRACCAR_URL,
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
 
-    const response = await axios.get(`${TRACCAR_URL}/api/${path}`, { headers })
+    // First, login to get session
+    await axiosInstance.post('/api/session', {
+      email: TRACCAR_EMAIL,
+      password: TRACCAR_PASSWORD
+    })
+
+    // Now make the API request
+    const response = await axiosInstance.get(`/api/${path}`)
 
     return NextResponse.json(response.data)
   } catch (error) {

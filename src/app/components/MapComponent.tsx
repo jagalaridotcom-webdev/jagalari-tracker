@@ -302,6 +302,7 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   const gpxBoundsRef = useRef<L.LatLngBounds | null>(null)
   const gpxErrorCountRef = useRef<number>(0)
   const [showPaths, setShowPaths] = useState(false)
+  const [showStats, setShowStats] = useState(true)
   const [currentLocation, setCurrentLocation] = useState<L.LatLng | null>(null)
   const [locationError, setLocationError] = useState<string | null>(null)
 
@@ -711,9 +712,18 @@ export default function MapComponent({ gpxData, devices = [], positions = [] }: 
   return (
     <div ref={mapRef} className="h-full w-full relative">
       {/* Statistics Cards - Floating over map */}
-      <div className="absolute top-4 right-4 z-[1000] space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto lg:max-h-none lg:overflow-visible lg:space-y-3">
-        {/* Mobile: Show compact version of all cards */}
-        <div className="lg:hidden space-y-2">
+      <div className="absolute top-4 right-4 z-[1000]">
+        <button
+          onClick={() => setShowStats(!showStats)}
+          className="mb-2 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-md transition-colors duration-200 shadow-sm"
+          title="Toggle statistics cards visibility"
+        >
+          {showStats ? 'Hide Stats' : 'Show Stats'}
+        </button>
+        {showStats && (
+          <div className="space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto lg:max-h-none lg:overflow-visible lg:space-y-3">
+            {/* Mobile: Show compact version of all cards */}
+            <div className="lg:hidden space-y-2">
           {/* Live Update Indicator - Mobile */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 backdrop-blur-md rounded-lg shadow-lg border border-green-200/50 p-2 flex items-center space-x-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

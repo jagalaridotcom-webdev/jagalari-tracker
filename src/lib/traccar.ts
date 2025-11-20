@@ -45,9 +45,7 @@ class TraccarService {
 
   async getDevices(): Promise<Device[]> {
     try {
-      const response = await axios.get(`${TRACCAR_URL}/api/devices`, {
-        headers: this.getHeaders()
-      })
+      const response = await axios.get(`/api/traccar?path=devices`)
       return response.data
     } catch (error: unknown) {
       const axiosError = error as { response?: { status?: number; data?: unknown } }
@@ -58,13 +56,11 @@ class TraccarService {
 
   async getPositions(deviceId?: number): Promise<Position[]> {
     try {
-      const url = deviceId
-        ? `${TRACCAR_URL}/api/positions?deviceId=${deviceId}`
-        : `${TRACCAR_URL}/api/positions`
+      const path = deviceId
+        ? `positions?deviceId=${deviceId}`
+        : `positions`
 
-      const response = await axios.get(url, {
-        headers: this.getHeaders()
-      })
+      const response = await axios.get(`/api/traccar?path=${encodeURIComponent(path)}`)
       return response.data
     } catch (error: unknown) {
       console.error('Failed to fetch positions:', error)
@@ -74,9 +70,7 @@ class TraccarService {
 
   async getLatestPositions(): Promise<Position[]> {
     try {
-      const response = await axios.get(`${TRACCAR_URL}/api/positions?latest=true`, {
-        headers: this.getHeaders()
-      })
+      const response = await axios.get(`/api/traccar?path=positions?latest=true`)
       return response.data
     } catch (error: unknown) {
       console.error('Failed to fetch latest positions:', error)

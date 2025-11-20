@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
+import { CookieJar } from 'tough-cookie'
+import { wrapper } from 'axios-cookiejar-support'
 
 const TRACCAR_URL = process.env.NEXT_PUBLIC_TRACCAR_URL || 'https://demo.traccar.org'
 const TRACCAR_EMAIL = process.env.NEXT_PUBLIC_TRACCAR_EMAIL || 'admin'
@@ -10,13 +12,17 @@ export async function GET(request: NextRequest) {
   const path = searchParams.get('path') || ''
 
   try {
-    const credentials = btoa(`${TRACCAR_EMAIL}:${TRACCAR_PASSWORD}`)
-    const headers = {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/json'
-    }
+    const jar = new CookieJar()
+    const client = wrapper(axios.create({ jar }))
 
-    const response = await axios.get(`${TRACCAR_URL}/api/${path}`, { headers })
+    // First, login to get session
+    await client.post(`${TRACCAR_URL}/api/session`, {
+      email: TRACCAR_EMAIL,
+      password: TRACCAR_PASSWORD
+    })
+
+    // Now make the API request
+    const response = await client.get(`${TRACCAR_URL}/api/${path}`)
 
     return NextResponse.json(response.data)
   } catch (error) {
